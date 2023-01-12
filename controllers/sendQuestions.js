@@ -5,7 +5,6 @@ const { type } = require("os");
 async function sendQuestions(req, res) {
     const csvStr = fs.readFileSync('./uploaded/questions/questions.csv', encoding="Utf-8")
     csv({
-        // noheader:true,
         output: "csv"
     })
     .fromString(csvStr)
