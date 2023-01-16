@@ -1,11 +1,11 @@
 const { spawn } = require("child_process");
 
-async function runScript(query){
+async function runScript(query, path){
     try {
         return new Promise((resolve, reject) =>{
             const process = spawn("python", [
                 "./pythonapp/getquery.py",
-                "./pythonapp/datalattekg.csv",
+                path,
                 query,
             ]);
 
