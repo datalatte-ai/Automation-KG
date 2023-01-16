@@ -5,3 +5,4 @@ uploaded
 **/**/*.csv
 **/*.csv
 utils/identifier.json
+*.docx
