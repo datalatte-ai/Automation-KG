@@ -1,2 +1,2 @@
 # Automation-KG
-This repository connects to a File-Coin for data upload and retrieval.
+This repository connects to filecoin network for data upload and retrieval.
