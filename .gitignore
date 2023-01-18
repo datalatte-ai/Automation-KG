@@ -6,3 +6,4 @@ uploaded
 **/*.csv
 utils/identifier.json
 *.docx
+*.tmp
