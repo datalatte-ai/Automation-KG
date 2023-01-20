@@ -12,11 +12,15 @@ async function runScript(path, query, type_query, column_of_update, value_of_upd
                 value_of_update
             ]);
             const out = []
-            process.stdout.on("data", data =>{
-                out.push(data.toString()); // <------------ by default converts to utf-8
-            })
+            try {
+                process.stdout?.on("data", data =>{
+                    out.push(data.toString()); // <------------ by default converts to utf-8
+                })
+            } catch (err) {
+                console.log(err);
+            }
             const err = []
-            process.stderr.on("data", data => {
+            process.stderr?.on("data", data => {
                 err.push(data.toString())
             })
             process.on('exit', (code, signal) => {
