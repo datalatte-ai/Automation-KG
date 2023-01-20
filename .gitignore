@@ -7,3 +7,4 @@ uploaded
 utils/identifier.json
 *.docx
 *.tmp
+.vscode/*

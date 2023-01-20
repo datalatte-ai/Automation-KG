@@ -85,7 +85,7 @@ def get_relation(sent):
     return(span.text)
 
 
-def QueryOnKG(path, query):
+def QueryOnKG(path, query, flag):
     candidate_sentences = pd.read_csv(path)
 
     for ind, sen in enumerate(candidate_sentences['sentence']):
@@ -104,9 +104,36 @@ def QueryOnKG(path, query):
     kg_df = pd.DataFrame(
         {'entity_1': source, 'entity_2': target, 'relation': relations})
 
+    if flag:
     # print(kg_df.query(query))
-    return kg_df.query(query).to_json()
+        return kg_df.query(query).to_json()
+    else:
+        return kg_df
 
+def UpdateOnKG(path, query, column_update, value_update):
+    try:
+        return_kg = QueryOnKG(path, query, False)
+        return_kg.loc[return_kg.query(query).index[0], column_update] = value_update
+        res = []
+        for index, row in return_kg.iterrows():
+            if row['relation'] == 'stored with':
+                res.append(row['entity_1'] + " " + 'is ' + row['relation'] + " " + row['entity_2'])
+            else:
+                res.append(row['entity_1'] + " " + row['relation'] + " " + row['entity_2'])
+        df = pd.DataFrame(res, columns=['sentence'])
+        
+        for ind,sen in enumerate(df['sentence']):
+            df['sentence'][ind] = df['sentence'][ind].replace("//","/")
+        
+        df.to_csv(path, index=False)
+        return True
+    except :
+        print('error of update on KG')
 
 if __name__ == '__main__':
-    print(QueryOnKG(sys.argv[1], sys.argv[2]))
+    #sys.argv[3] => 'update' -> update 'query' -> query
+    if sys.argv[3] == 'query':
+        print(QueryOnKG(sys.argv[1], sys.argv[2], True))
+    elif sys.argv[3] == 'update':
+        #variable UpdateOnKG(path, string_query, which entity or relation or column, value of you want update)
+        print(UpdateOnKG(sys.argv[1], sys.argv[2], sys.argv[4], sys.argv[5]))
