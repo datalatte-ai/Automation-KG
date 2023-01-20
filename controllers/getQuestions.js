@@ -21,13 +21,17 @@ async function getQuestions(req, res) {
 
         //query for find user in datalattekg
         query_get_user = `relation == 'has' & entity_2 == 'wallet_id_${wallet_address}'`;
-        get_owner_kg_user = JSON.parse(
-            await runScript(
-                "./pythonapp/uploaded/toplevelkg/datalattekg.csv",
-                query_get_user,
-                'query'
-            )
-        );
+        try {
+            get_owner_kg_user = JSON.parse(
+                await runScript(
+                    "./pythonapp/uploaded/toplevelkg/datalattekg.csv",
+                    query_get_user,
+                    "query"
+                )
+            );
+        } catch (err) {
+            console.log(err);
+        }
         let user_id;
         let get_relation_owns;
 
@@ -40,11 +44,12 @@ async function getQuestions(req, res) {
                 await runScript(
                     "./pythonapp/uploaded/toplevelkg/datalattekg.csv",
                     query_get_relation,
-                    'query'
+                    "query"
                 )
             );
 
             if (
+                Object.values(get_relation_owns?.entity_2)[0] !== "undefined" &&
                 Object.values(get_relation_owns?.entity_2)[0]?.includes(
                     "survey_owner_KG_"
                 )
@@ -79,13 +84,18 @@ async function getQuestions(req, res) {
         });
         //TODO: Create an API for the Lotus storage for return CID of survey
 
+        const survey_owner_id = await increaseIdentifier(
+            "survey_owner_identifier"
+        );
+
         //add information of survey in datalattekg
         const CID = "Null";
         const ready_file_datalatte_kg = [
+            `User_${user_id} owns survey_owner_KG_${survey_owner_id}`,
             `Survey_${survey_id} is associated with ${title} KG`,
             `Survey_${survey_id} owns survey_KG_${survey_id}`,
             `Survey_KG_${survey_id} is stored with ${CID}`,
-            `Sms_KG_1 relates to Null\n`
+            `Sms_KG_1 relates to Null\n`,
         ];
 
         fs.appendFileSync(
@@ -96,15 +106,29 @@ async function getQuestions(req, res) {
                 console.log("Saved!");
             }
         );
-        const survey_owner_id = await increaseIdentifier(
-            "survey_owner_identifier"
-        );
-        console.log(get_relation_owns?.entity_2);
-        console.log(get_relation_owns?.entity_2.match('/survey_owner_KG_\d/g'));
+
+        
+
+        query_get_user = `relation == 'has' & entity_2 == 'wallet_id_${wallet_address}'`;
+        try {
+            get_owner_kg_user = JSON.parse(
+                await runScript(
+                    "./pythonapp/uploaded/toplevelkg/datalattekg.csv",
+                    query_get_user,
+                    "query"
+                )
+            );
+        } catch (err) {
+            console.log(err);
+        }
         //check you have not survey before
-        if (typeof(Object.keys(get_owner_kg_user?.entity_1)[0] !== "undefined")) {
-            if (
-                Object.values(get_relation_owns?.entity_2)[0]?.includes(
+        if (
+            typeof Object.keys(get_owner_kg_user?.entity_1)[0] !== "undefined"
+        ) {
+            if (typeof get_relation_owns !== 'undefined' &&
+                typeof Object.keys(get_relation_owns?.entity_2)[0] !==
+                    "undefined" &&
+                Object.values(get_relation_owns?.entity_2)[0].includes(
                     "survey_owner_KG_"
                 )
             ) {
@@ -144,22 +168,34 @@ async function getQuestions(req, res) {
                     }
                 );
             }
-        }else {
+        } else {
             res.send({
                 message: "ok",
                 "status code": 200,
-                error:"Your not my user!"
+                error: "Your not my user!",
             });
         }
 
         //TODO upload survey owner kg on filecoin and get CID
 
         //update datalattekg file
-        result_of_update = await runScript('./toplevelkg/datalattekg.csv', "relation == 'relates to' & entity_1 == 'Sms_KG_1'", 'update', 'entity_2', 'CID')
-        result_of_update = await runScript(`./toplevelkg/survey_owner_KG_${survey_owner_id}.csv`, "relation == 'relates to' & entity_1 == 'Sms_KG_1'", 'update', 'entity_2', 'CID')
-        
-        
-        
+        result_of_update = await runScript(
+            "./toplevelkg/datalattekg.csv",
+            "relation == 'relates to' & entity_1 == 'Sms_KG_1'",
+            "update",
+            "entity_2",
+            "CID"
+        );
+        result_of_update = await runScript(
+            `./toplevelkg/survey_owner_KG_${survey_owner_id}.csv`,
+            "relation == 'relates to' & entity_1 == 'Sms_KG_1'",
+            "update",
+            "entity_2",
+            "CID"
+        );
+
+        //create survey kg insert survey owner part
+
         res.send({
             message: "ok",
             "status code": 200,
