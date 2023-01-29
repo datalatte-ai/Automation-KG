@@ -12,7 +12,7 @@ app.get("/", async (req, res) => {
   res.send({"message":"Hello"})
 })
 
-app.post("/api/v1/get_questions", async (req, res) => {
+app.post("/api/v1/upload_survey", async (req, res) => {
   await getQuestions(req, res);
 });
 app.get("/api/v1/send_questions", async (req, res) => {
