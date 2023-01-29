@@ -9,6 +9,7 @@ async function getQuestions(req, res) {
     try {
         const title = req.body.title;
         const questions = req.body.questions;
+        const wallet_address = req.body.wallet_address;
 
         if (!questions) {
             return res.send({
@@ -16,34 +17,22 @@ async function getQuestions(req, res) {
                 "status code": 200,
             });
         }
-        const wallet_address = req.body.wallet_address;
         //TODO : get DataLatte-KG from lotus for can query on it
         
         //query for find user in datalattekg'
-        let query_get_user;
-        query_get_user = [`has` ,`wallet_id_${wallet_address}`];
-        try {
-            get_owner_kg_user = (
-                await get_query(
-                    query_get_user,
-                    "./uploaded/toplevelkg/datalattekg.csv"
-                )
-            );
-        } catch (err) {
-            console.log(err);
-        }
+        query_get_user = ['' , `has` ,`wallet_id_${wallet_address}`];
+        get_owner_kg_user = await get_query(query_get_user, "./uploaded/toplevelkg/datalattekg.csv");
+        
         let user_id;
         let get_relation_owns;
         //check if user not find
-        
         if (get_owner_kg_user[0]) {
-            get_relation_owns = await get_query([get_owner_kg_user[0].entity_1, "", ""], "./uploaded/toplevelkg/datalattekg.csv")
+            get_relation_owns = await get_query([get_owner_kg_user[0].entity_1, "owns", ""], "./uploaded/toplevelkg/datalattekg.csv")
             if (get_relation_owns[0].entity_2 && get_relation_owns[0]?.entity_2.includes("survey_owner_KG_")) {
                 user_id = parseInt(get_owner_kg_user[0].entity_1.split("_")[1]);
             }
         } else {
             user_id = await increaseIdentifier("user_identifier");
-            console.log(user_id);
             fs.appendFileSync(
                 "./uploaded/toplevelkg/datalattekg.csv",
                 `User_${user_id} has 'wallet_id_${wallet_address}'\n`,
@@ -67,7 +56,13 @@ async function getQuestions(req, res) {
         });
         //TODO: Create an API for the Lotus storage for return CID of survey
 
-        const survey_owner_id = await increaseIdentifier("survey_owner_identifier");
+        get_relation_owns = await get_query([get_owner_kg_user[0].entity_1, "owns", ""], "./uploaded/toplevelkg/datalattekg.csv")
+        let survey_owner_id;
+        if (get_relation_owns[0]?.entity_2) {
+            survey_owner_id = parseInt(get_relation_owns[0]?.entity_2.split("_")[3])
+        } else {
+            survey_owner_id = await increaseIdentifier("survey_owner_identifier");
+        }
 
         //add information of survey in datalattekg
         const CID = "Null";
@@ -90,25 +85,17 @@ async function getQuestions(req, res) {
 
 
         query_get_user = ["", `has`,`wallet_id_${wallet_address}`];
-        try {
-            get_owner_kg_user = 
-                await get_query(query_get_user, "./uploaded/toplevelkg/datalattekg.csv")
-        } catch (err) {
-            console.log(err);
-        }
+        get_owner_kg_user = await get_query(query_get_user, "./uploaded/toplevelkg/datalattekg.csv")
+        
         //check you have not survey before
-        if (
-            get_owner_kg_user[0]?.entity_1
-        ) {
-            get_relation_owns = await get_query([get_owner_kg_user[0].entity_1, "", ""], "./uploaded/toplevelkg/datalattekg.csv")
+        if (get_owner_kg_user[0]?.entity_1) {
+            get_relation_owns = await get_query([get_owner_kg_user[0].entity_1, "owns", ""], "./uploaded/toplevelkg/datalattekg.csv")
             console.log(get_relation_owns)
             if (get_relation_owns.length > 0 && get_relation_owns[0]?.entity_2 && get_relation_owns[0]?.entity_2.includes("survey_owner_KG_")) {
                 const ready_file = [
                     `User_${user_id} creates survey_${survey_id}`,
                     `Survey_${survey_id} is stored with Null`,
-                    `Survey_${survey_id} is associated with ${title} KG`,
-                    `User_${user_id} owns survey_owner_KG_${survey_owner_id}`,
-                    `Survey_owner_KG_${survey_owner_id} relates to Null\n`,
+                    `Survey_${survey_id} is associated with ${title} KG\n`
                 ];
                 fs.appendFileSync(
                     `./uploaded/surveyownerkg/survey_owner_kg_${survey_owner_id}.csv`,
@@ -145,7 +132,6 @@ async function getQuestions(req, res) {
                 error: "Your not my user!",
             });
         }
-        console.log("test100");
         //TODO upload survey owner kg on filecoin and get CID
 
         //update datalattekg file query[entity_1, relation, entity_2], path, field_update), value_update
