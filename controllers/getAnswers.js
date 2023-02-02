@@ -58,6 +58,7 @@ async function getAnswers(req, res) {
             });
         }
     }
+
     converter.json2csv(results, (err, csv) => {
         if (err) {
             throw err;
@@ -67,10 +68,36 @@ async function getAnswers(req, res) {
             csv
         );
     });
-
-
+    
+    let score = 0; 
+    for (let item of Object.keys(results)) {
+        score = score + results[item].answer
+    }
+    score = parseFloat(score / 29).toFixed(2);
+    
+    const query_get_survey_name = [`Survey_${survey_id}`, 'is associated with', ''];
+    const get_survey_name = await get_query(query_get_survey_name, "./uploaded/toplevelkg/datalattekg.csv");
     //API to upload result-kg on Ip-fs or File-coin
- 
+    const ready_file_user_kg = [
+        `sentence`,
+        `Wallet_id_${wallet_address} has user_${user_id}`,
+        `User_${user_id} answers survey_${survey_id}`,
+        `Survey_${survey_id} is associated with ${get_survey_name[0].entity_2}`,
+        `Survey_${survey_id} is assigned with ${score}`,
+        `Survey_${survey_id} is filled with Null`,
+        `User_${survey_id} owns user_KG`,
+        `User Kg links to Null\n`
+    ];
+
+    fs.writeFileSync(
+        `./uploaded/userkg/user_kg_${user_id}.csv`,
+        ready_file_user_kg.join("\n"),
+        function (err) {
+            if (err) throw err;
+            console.log("saved!");
+        }
+    );
+
     res.send({
         message:"ok",
         status:200
